@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 from functools import wraps
+import os
 from typing import Any
+from urllib.parse import urlparse
 
+from dotenv import load_dotenv
 import streamlit as st
 import httpx
 from postgrest.exceptions import APIError
 from supabase import Client, create_client
+
+load_dotenv()
 
 
 class DatabaseConfigurationError(RuntimeError):
@@ -29,8 +34,22 @@ def _handle_connection_errors(method):
 
 @st.cache_resource
 def get_supabase_client() -> Client:
-    url = st.secrets.get("SUPABASE_URL")
-    secret_key = st.secrets.get("SUPABASE_SECRET_KEY") or st.secrets.get("SUPABASE_SERVICE_ROLE_KEY")
+    database_url = os.getenv("DATABASE_URL", "")
+    url = os.getenv("SUPABASE_URL") or st.secrets.get("SUPABASE_URL")
+    secret_key = (
+        os.getenv("SUPABASE_SECRET_KEY")
+        or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        or os.getenv("SUPABASE_KEY")
+        or st.secrets.get("SUPABASE_SECRET_KEY")
+        or st.secrets.get("SUPABASE_SERVICE_ROLE_KEY")
+    )
+
+    if not url and database_url:
+        hostname = urlparse(database_url).hostname or ""
+        if hostname.startswith("db.") and hostname.endswith(".supabase.co"):
+            project_ref = hostname.removeprefix("db.").removesuffix(".supabase.co")
+            url = f"https://{project_ref}.supabase.co"
+
     if (
         not url
         or not secret_key
@@ -38,7 +57,8 @@ def get_supabase_client() -> Client:
         or "YOUR-NEW-SUPABASE" in secret_key
     ):
         raise DatabaseConfigurationError(
-            "Set real SUPABASE_URL and SUPABASE_SECRET_KEY values in Streamlit Cloud Settings > Secrets, then redeploy."
+            "Set DATABASE_URL and a Supabase API key in .env. Use SUPABASE_SECRET_KEY (server-side) "
+            "or SUPABASE_KEY, then restart Streamlit."
         )
     return create_client(url, secret_key)
 

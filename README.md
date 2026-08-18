@@ -9,12 +9,14 @@ bookings, and seat reservations.
 2. Open **SQL Editor**, paste and run the full contents of `supabase_schema.sql`.
 	It creates the tables, an atomic booking function, and the initial three shows.
 3. In **Project Settings > API Keys**, create or copy a server-side secret key.
-4. For local development create `.streamlit/secrets.toml` (do not commit it):
+4. For local development copy `.env.example` to `.env` (do not commit `.env`) and fill in your real database password and Supabase server-side key:
 
-	```toml
-	SUPABASE_URL = "https://bkxkmehxtibzwhhmojsf.supabase.co"
-	SUPABASE_SECRET_KEY = "your-server-side-secret-key"
+	```dotenv
+	DATABASE_URL=postgresql://postgres:YOUR-PASSWORD@db.YOUR-PROJECT-REF.supabase.co:5432/postgres
+	SUPABASE_SECRET_KEY=your-server-side-secret-key
 	```
+
+	`DATABASE_URL` is used to derive `SUPABASE_URL`; `SUPABASE_SECRET_KEY` is required for the app's Supabase API calls.
 
 5. In Streamlit Community Cloud, open the app dashboard, choose **Settings > Secrets**,
 	and paste the same values. Then redeploy the app.
